@@ -1,0 +1,33 @@
+{
+    "name": "孕娘王者",
+    "short_name": "孕娘王者",
+    "description": "石头剪刀布对战街机游戏 —— 搭配角色卡与孕娘英灵卡, 连战 5 场",
+    "lang": "zh-CN",
+    "start_url": "index.html",
+    "scope": "./",
+    "display": "fullscreen",
+    "display_override": ["fullscreen", "standalone"],
+    "orientation": "landscape",
+    "background_color": "#ffd9ea",
+    "theme_color": "#ff6b9d",
+    "icons": [
+        {
+            "src": "assets/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "assets/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "assets/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

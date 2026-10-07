@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#ff6b9d">
+    <meta name="screen-orientation" content="landscape">
+    <meta name="x5-orientation" content="landscape">
+    <meta name="full-screen" content="yes">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="browsermode" content="application">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+    <link rel="icon" href="assets/icons/icon-192.png">
+    <title>孕娘王者</title>
+    <link rel="stylesheet" href="src/css/style.css">
+</head>
+<body>
+    <!-- 竖屏提示: 手机竖着拿时盖住画面, 提示转横屏 -->
+    <div id="rotate-notice">
+        <div class="rotate-inner">
+            <div class="rotate-phone"></div>
+            <p>请把手机横过来玩</p>
+            <small>孕娘王者 · 横屏体验更好</small>
+        </div>
+    </div>
+
+    <!-- 游戏主容器 -->
+    <div id="game-container">
+        <!-- 街机外框 -->
+        <div id="arcade-frame">
+            <!-- 显示器区域 (占据 70% 高度) -->
+            <div id="display-screen">
+                <div id="screen-content"></div>
+            </div>
+
+            <!-- 底部控制区: 一行放下所有操作件 -->
+            <div id="controls">
+                <!-- 左侧: 功能键 + 刷卡机 -->
+                <div id="left-panel">
+                    <div id="top-controls">
+                        <button class="control-button" id="browse-cards-btn">浏览卡牌</button>
+                        <button class="control-button" id="save-btn">存档</button>
+                        <button class="control-button" id="load-btn">读档</button>
+                        <button class="control-button" id="reset-btn">重置</button>
+                        <button class="control-button cheat" id="cheat-btn">作弊 +100币</button>
+                    </div>
+
+                    <div id="card-reader">
+                        <div class="card-reader-slot"></div>
+                    </div>
+                </div>
+
+                <!-- 中间: 三角按键(等边, 紧凑) -->
+                <div class="control-row">
+                    <button class="game-button" id="btn-rock" data-action="rock">
+                        <span>石头</span>
+                        <small>重击</small>
+                    </button>
+                    <button class="game-button" id="btn-scissors" data-action="scissors">
+                        <span>剪刀</span>
+                        <small>突袭</small>
+                    </button>
+                    <button class="game-button" id="btn-paper" data-action="paper">
+                        <span>布</span>
+                        <small>防御</small>
+                    </button>
+                </div>
+
+                <!-- 机台常驻圆键(位置尺寸固定, 仅功能随阶段变化) -->
+                <button id="universal-confirm-btn" class="disabled">确认</button>
+                <button id="universal-cancel-btn" class="disabled">取消</button>
+
+                <!-- 右侧: 投币口 -->
+                <div id="coin-input-area">
+                    <div class="coin-slot-visual" id="coin-slot-clickable"></div>
+                    <div class="coin-display">硬币: <span id="coin-count">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 对话框遮罩层 -->
+    <div id="dialog-overlay" class="hidden">
+        <div id="dialog-box">
+            <div id="dialog-text"></div>
+            <div id="dialog-extra"></div>
+            <div id="dialog-buttons"></div>
+        </div>
+    </div>
+
+    <!-- 卡牌展示遮罩层 -->
+    <div id="card-overlay" class="hidden">
+        <div id="card-display">
+            <div id="card-image"></div>
+            <div id="card-glow"></div>
+            <div class="click-hint">点击继续</div>
+        </div>
+    </div>
+
+    <!-- 加载数据和脚本 -->
+    <script src="src/js/data.js"></script>
+    <script src="src/js/game.js"></script>
+    <script src="src/js/ui.js"></script>
+    <script src="src/js/battle.js"></script>
+    <script src="src/js/main.js"></script>
+</body>
+</html>
