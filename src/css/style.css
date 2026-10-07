@@ -19,7 +19,11 @@
        底部控制区只占 30% 高度 -> 显示器稳定拿到 70%
        --chrome = body padding + 机台 border + 机台 padding */
     --chrome: 56px;
-    --tri-h: max(158px, calc(30vh - var(--chrome)));
+    /* 控制行高度 = 视口高的固定比例(26%)。
+       原来是 calc(30vh - 56px), 那个固定的 56px 会让比例随窗口高度漂移:
+       高窗口约 26%, 矮窗口被 158px 下限顶到 22% —— 同一个游戏在不同缩放下
+       按钮大小就对不上了。改成纯比例后, 任何窗口/缩放下都是 26%。 */
+    --tri-h: max(158px, calc(26vh));
 
     /* 紧凑等边三角: 相邻圆边距 = 0.09d
        边长 s = 1.09d, 高 = 0.944d, 控制区高 = 高 + d = 1.944d */
@@ -53,6 +57,11 @@ body {
 #game-container {
     width: 100%;
     max-width: min(1780px, 95vw);
+
+    /* 机台锁形状: 窗口越宽, 柜体越扁 -> 屏幕会被拉成很宽的一条。
+       用 max(高度 * 1.24) 把柜体卡住, 任何窗口下机台形状都一样,
+       只是整体放大缩小。1.24 = 1780 : 1435, 也就是一直以来的观感。
+       只在"够高的窗口"生效; 手机横屏(高度小)照旧铺满宽度, 免得控件挤爆。 */
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -63,6 +72,9 @@ body {
     min-height: 0;
     display: flex;
     flex-direction: column;
+    /* 底部控件用 cqw 跟着"机台宽度"缩放, 而不是跟视口宽度。
+       否则机台一窄, 左面板(功能键+刷卡区)还按视口尺寸铺开, 就会压住中间的三角键。 */
+    container-type: inline-size;
     background: linear-gradient(145deg, #ffb3c1 0%, #ff8fa3 50%, #ffb3c1 100%);
     border: 12px solid var(--pink-4);
     border-radius: 24px;
@@ -97,6 +109,8 @@ body {
     align-items: center;
     padding: clamp(6px, 1.2vh, 18px) clamp(10px, 1.4vw, 26px);
     overflow: hidden;
+    /* 供 .battle-playfield 用 cqw/cqh 反推尺寸(见下方战斗区) */
+    container-type: size;
 }
 
 /* 防止 flex + align-items:center 把子容器压成 shrink-to-fit */
@@ -121,7 +135,8 @@ body {
     bottom: 0;
     display: flex;
     align-items: center;
-    gap: clamp(8px, 1.2vw, 26px);
+    /* cqw = 机台内容宽; 系数按 1658(你喜欢的那个尺寸) 标定, 观感不变 */
+    gap: clamp(5px, 1.568cqw, 26px);
     z-index: 20;
 }
 
@@ -133,7 +148,7 @@ body {
     padding: clamp(5px, 0.9vh, 11px);
     background: rgba(255, 255, 255, 0.24);
     border-radius: 12px;
-    width: clamp(112px, 9.6vw, 190px);
+    width: clamp(64px, 11.46cqw, 190px);
 }
 
 .control-button {
@@ -169,24 +184,24 @@ body {
 
 /* 刷卡机 */
 #card-reader {
-    width: clamp(190px, 19vw, 380px);
+    /* 22.92cqw / 380 = 按"机台内容宽 1658"标定, 正好等于你喜欢的那个尺寸;
+       因为机台已锁形状, 这个系数在 50% 和 100% 缩放下的物理宽度是一致的 */
+    width: clamp(110px, 22.92cqw, 380px);
     height: clamp(42px, 7vh, 88px);
     background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
     border: clamp(3px, 0.42vh, 5px) solid var(--pink-4);
     border-radius: 14px;
     position: relative;
+    /* 让黑槽四边都留出粉色, 否则黑槽高度顶满内沿, 两端圆角会切进粉色边框里 */
+    padding: clamp(2px, 0.35vh, 5px) clamp(8px, 0.85cqw, 14px);
     box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.8);
 }
 
 .card-reader-slot {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: calc(100% - 28px);
-    height: 100%;
+    inset: 0;                     /* 铺满内边距盒, 四周由外壳的 padding 留白 */
     background: #000;
-    border-radius: 9px;
+    border-radius: 7px;           /* 内圆角 = 外壳 14 - 边框 - 内边距, 才嵌套得上 */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -430,7 +445,7 @@ body {
     border: 8px solid var(--pink-4);
     border-radius: 22px;
     padding: clamp(20px, 3vh, 40px);
-    max-width: 760px;
+    max-width: 560px;
     width: 92%;
     max-height: 88vh;
     overflow-y: auto;
@@ -808,18 +823,34 @@ body {
 
 /* ===== 战斗界面 ===== */
 .battle-stage {
-    display: flex;
     width: 100%;
     height: 100%;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border-radius: 12px;
+    padding: 0;                 /* 必须为 0: 内接框用 inset:0 对齐, 有 padding 会错位 */
+    background: #0b0710;
+}
+
+/* 战斗画面主体: 锁死成背景图的比例(1216x832)后居中内接。
+   这样无论屏幕多宽多扁, 角色站位与背景构图都完全一致 ——
+   否则屏幕一扁, contain 就填不满、两个角色还会被推向两端。
+   cqw/cqh = #screen-content 的内容盒尺寸(它已开启 container-type:size)。 */
+.battle-playfield {
+    --battle-ar: 1.4615384615;      /* 1216 / 832 */
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: min(100cqw, calc(100cqh * var(--battle-ar)));
+    height: min(100cqh, calc(100cqw / var(--battle-ar)));
+    display: flex;
     justify-content: space-around;
     align-items: center;
     gap: clamp(10px, 2vw, 40px);
     padding: 4px;
-    border-radius: 12px;
-    position: relative;
-    overflow: hidden;
+    /* 不设圆角: 清晰背景是"满屏一张图", 圆角会把四角切出弧线 */
     isolation: isolate;
-    background: #0b0710;
 }
 
 /* 底层: cover 铺满并轻微模糊, 只用来填满两侧留白, 不抢戏 */
@@ -828,7 +859,8 @@ body {
     inset: -24px;                 /* 外扩一点, 避免模糊后露出边缘 */
     background-size: cover;
     background-position: center;
-    filter: blur(16px) brightness(0.55) saturate(0.9);
+    /* 模糊只用来把内接框四周的留白接上, 别糊成一团黑 */
+    filter: blur(7px) brightness(0.72) saturate(0.95);
     z-index: 0;
 }
 
@@ -840,11 +872,7 @@ body {
     background-position: center;
     background-repeat: no-repeat;
     z-index: 1;
-    /* 左右边缘渐隐, 融进底层模糊图, 避免出现硬邦邦的竖直接缝 */
-    -webkit-mask-image: linear-gradient(90deg,
-        transparent 0%, #000 11%, #000 89%, transparent 100%);
-    mask-image: linear-gradient(90deg,
-        transparent 0%, #000 11%, #000 89%, transparent 100%);
+    /* 不做边缘羽化: 清晰图直接铺满内接框, 四周留白交给底层模糊图补 */
 }
 
 /* 轻压暗, 只为让名字/血条读得清; 不再做整体虚化 */
@@ -1125,6 +1153,14 @@ button, .game-button, .card-thumb, .screen-btn, .dialog-btn, .coin-slot-visual {
     justify-content: center;
     align-items: center;
 }
+/* 机台锁形状: 只有窗口"够高"时才收窄。
+   手机横屏高度小, 不触发, 仍然铺满宽度 -> 底部控件不会被挤爆。 */
+@media (min-height: 600px) {
+    #game-container {
+        max-width: min(1780px, 95vw, calc(100vh * 1.24));
+    }
+}
+
 @media (orientation: portrait) and (max-width: 820px) {
     #rotate-notice { display: flex; }
 }
@@ -1184,8 +1220,9 @@ button, .game-button, .card-thumb, .screen-btn, .dialog-btn, .coin-slot-visual {
     #arcade-frame { border-width: 8px; border-radius: 16px; padding: 6px 10px; }
     #top-controls { gap: 3px; padding: 3px; border-radius: 8px; }
     .control-button { padding: 3px 7px; font-size: 9px; border-width: 2px; border-radius: 6px; }
-    #card-reader { width: clamp(120px, 17vw, 230px); border-width: 2px; border-radius: 9px; }
-    .card-reader-slot { width: calc(100% - 16px); }
+    #card-reader { width: clamp(96px, 17cqw, 210px); border-width: 2px; border-radius: 9px; }
+    /* 注意: 不要再给 .card-reader-slot 设 width —— 它是 inset:0 铺满内边距盒的,
+       设了 width 会覆盖 right:0, 黑槽变成左对齐, "刷卡区"三字就偏左了 */
     .coin-slot-visual { --coin-h: 54px; }
     .game-button { border-width: 3px; }
     .game-button small { font-size: 8px; margin-top: 1px; }
