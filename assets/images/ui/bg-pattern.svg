@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffe4f0"/>
+      <stop offset="35%" stop-color="#ffd6e8"/>
+      <stop offset="70%" stop-color="#ffcfe4"/>
+      <stop offset="100%" stop-color="#ffe0ef"/>
+    </linearGradient>
+
+    <symbol id="heart" viewBox="0 0 24 24">
+      <path d="M12 21s-7.5-4.7-9.6-9.2C.6 8.2 2.3 4.6 5.8 4.1c2-.3 3.9.7 4.9 2.3l1.3 2 1.3-2c1-1.6 2.9-2.6 4.9-2.3 3.5.5 5.2 4.1 3.4 7.7C19.5 16.3 12 21 12 21z"/>
+    </symbol>
+
+    <symbol id="star" viewBox="0 0 24 24">
+      <path d="M12 2.4l2.6 6.1 6.6.55-5 4.35 1.5 6.45L12 16.4l-5.7 3.45 1.5-6.45-5-4.35 6.6-.55z"/>
+    </symbol>
+
+    <symbol id="spark" viewBox="0 0 24 24">
+      <path d="M12 2c.6 4.4 2.6 6.8 7 7.6v.8c-4.4.8-6.4 3.2-7 7.6h-.8c-.6-4.4-2.6-6.8-7-7.6v-.8c4.4-.8 6.4-3.2 7-7.6z"/>
+    </symbol>
+  </defs>
+
+  <rect width="400" height="400" fill="url(#base)"/>
+
+  <!-- 斜向柔光带 -->
+  <g opacity="0.30">
+    <path d="M-40 120 L440 -60 L440 30 L-40 210 Z" fill="#ffffff"/>
+    <path d="M-40 300 L440 120 L440 175 L-40 355 Z" fill="#ffffff" opacity="0.6"/>
+  </g>
+
+  <!-- 重复图案: 心 / 星 / 闪光 -->
+  <g fill="#ff9ec4" opacity="0.26">
+    <use href="#heart" x="26"  y="30"  width="26" height="26"/>
+    <use href="#heart" x="226" y="196" width="30" height="30"/>
+    <use href="#heart" x="326" y="66"  width="22" height="22"/>
+    <use href="#heart" x="120" y="322" width="28" height="28"/>
+  </g>
+
+  <g fill="#ffb3d1" opacity="0.34">
+    <use href="#star" x="146" y="58"  width="30" height="30"/>
+    <use href="#star" x="46"  y="206" width="24" height="24"/>
+    <use href="#star" x="286" y="286" width="32" height="32"/>
+    <use href="#star" x="356" y="176" width="20" height="20"/>
+  </g>
+
+  <g fill="#ffffff" opacity="0.55">
+    <use href="#spark" x="96"  y="126" width="22" height="22"/>
+    <use href="#spark" x="246" y="36"  width="18" height="18"/>
+    <use href="#spark" x="196" y="256" width="26" height="26"/>
+    <use href="#spark" x="16"  y="286" width="20" height="20"/>
+    <use href="#spark" x="330" y="336" width="24" height="24"/>
+  </g>
+
+  <!-- 细点阵 -->
+  <g fill="#ff85b8" opacity="0.18">
+    <circle cx="60" cy="90" r="3"/><circle cx="132" cy="176" r="3"/><circle cx="212" cy="86" r="3"/>
+    <circle cx="292" cy="146" r="3"/><circle cx="364" cy="96" r="3"/><circle cx="76" cy="256" r="3"/>
+    <circle cx="156" cy="376" r="3"/><circle cx="236" cy="326" r="3"/><circle cx="316" cy="386" r="3"/>
+    <circle cx="376" cy="246" r="3"/><circle cx="20" cy="176" r="3"/><circle cx="256" cy="16" r="3"/>
+  </g>
+</svg>
