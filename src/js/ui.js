@@ -705,17 +705,25 @@ class UI {
 
         const src = bg || this._lastBattleBg || '';
         if (bg) this._lastBattleBg = bg;
+
+        // 战斗画面主体: 锁死成背景图的比例(1216x832)后居中内接。
+        // 这样任何窗口形状下, 角色站位和背景构图都完全一致 ——
+        // 不然屏幕一扁, contain 就填不满、两个角色还会被推向两端。
+        const field = document.createElement('div');
+        field.className = 'battle-playfield';
+
         if (src) {
+            // 铺满整屏的模糊层: 只负责把内接框四周的留白补上
             const fill = document.createElement('div');
             fill.className = 'battle-bg-fill';
             fill.style.backgroundImage = `url('${src}')`;
+            stage.appendChild(fill);
 
+            // 清晰层: 放在内接框里, 比例一致 -> contain 正好铺满, 没有空档
             const full = document.createElement('div');
             full.className = 'battle-bg-full';
             full.style.backgroundImage = `url('${src}')`;
-
-            stage.appendChild(fill);
-            stage.appendChild(full);
+            field.appendChild(full);
         }
 
         if (round && round.total) {
@@ -725,8 +733,9 @@ class UI {
             stage.appendChild(tag);
         }
 
-        stage.appendChild(this.createCharacterDisplay(player, 'player'));
-        stage.appendChild(this.createCharacterDisplay(enemy, 'enemy'));
+        field.appendChild(this.createCharacterDisplay(player, 'player'));
+        field.appendChild(this.createCharacterDisplay(enemy, 'enemy'));
+        stage.appendChild(field);
 
         this.screenContent.appendChild(stage);
     }
