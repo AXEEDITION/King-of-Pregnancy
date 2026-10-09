@@ -819,11 +819,17 @@ class UI {
         else if (roundResult.winner === 'enemy') resultText += '糟糕，对方的胜利！';
         else resultText += '平局！';
 
-        // 破防提示: 出防御方虽然赢了, 但重击高过其防御, 仍会被打出溢出伤害
+        // 石头 vs 布 的攻防对抗说明:
+        //   打穿防御 -> 双方都掉血(攻击方吃反震, 防御方吃溢出)
+        //   没打穿   -> 只有攻击方吃反震, 防御方毫发无伤
         if (roundResult.enemyPierced) {
-            resultText += '\n但是，对方的防御力不足以挡下我方的攻击——破防！';
+            resultText += '\n对方的防御没能完全挡下我方的重击——破防！\n但反震也伤到了我方。';
         } else if (roundResult.playerPierced) {
-            resultText += '\n但是，我方的防御力不足以挡下对方的攻击——破防！';
+            resultText += '\n我方的防御没能完全挡下对方的重击——破防！\n但反震也伤到了对方。';
+        } else if (roundResult.playerRecoil) {
+            resultText += '\n我方的重击被对方的防御完全挡下，反震伤到了我方。';
+        } else if (roundResult.enemyRecoil) {
+            resultText += '\n对方的攻击被我方的防御完全挡下，反震伤到了对方。';
         }
 
         resultText += '\n\n（点击任意处继续）';

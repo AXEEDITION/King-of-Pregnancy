@@ -47,7 +47,9 @@ class Battle {
             enemyDamage: result.enemyDamage,
             winner: result.winner,
             playerPierced: result.playerPierced,
-            enemyPierced: result.enemyPierced
+            enemyPierced: result.enemyPierced,
+            playerRecoil: result.playerRecoil,
+            enemyRecoil: result.enemyRecoil
         };
 
         this.playerChoice = null;
@@ -67,6 +69,8 @@ class Battle {
         // 破防: 出防御方本来赢, 但攻击力高过其防御, 仍会被打出(重击 - 防御)的溢出伤害
         let playerPierced = false;   // 我方防御被对方重击破开
         let enemyPierced = false;    // 对方防御被我方重击破开
+        let playerRecoil = false;    // 我方的重击被防御挡下, 反震伤到自己
+        let enemyRecoil = false;     // 对方的攻击被我方防御挡下, 反震伤到对方
 
         // 石头(重击) vs 剪刀(突袭)
         if (p === 'rock' && e === 'scissors') {
@@ -84,16 +88,28 @@ class Battle {
             winner = 'enemy';
             playerDamage = this.enemy.finalStats.rushAttack;
         }
-        // 布(防御) vs 石头(重击)
+        // 布(防御) vs 石头(重击) —— 攻防对抗。
+        // 原来两条分支里掉血的都是"出布"的那一方, 出石头的永远安全,
+        // 于是"无脑点石头"成了没有代价的优势策略。现在改成对称的:
+        //   石头方(攻) 承受 min(重击, 防御) 的反震
+        //   布方  (防) 只在对方重击超过自己防御时, 承受溢出的部分
+        // 出布方受到的伤害与改动前完全一致, 只是补上了出石头方的代价。
         else if (p === 'paper' && e === 'rock') {
             winner = 'player';
-            // 出布者获胜, 但仍要承受 (对方重击 - 自身防御) 的溢出伤害
-            playerDamage = Math.max(0, this.enemy.finalStats.heavyAttack - this.player.finalStats.defense);
-            playerPierced = this.enemy.finalStats.heavyAttack > this.player.finalStats.defense;
+            const atk = this.enemy.finalStats.heavyAttack;   // 对方的石头
+            const def = this.player.finalStats.defense;      // 我方的布
+            playerDamage = Math.max(0, atk - def);           // 我方吃溢出
+            enemyDamage = Math.min(atk, def);                // 对方吃反震
+            playerPierced = atk > def;
+            enemyRecoil = true;
         } else if (p === 'rock' && e === 'paper') {
             winner = 'enemy';
-            enemyDamage = Math.max(0, this.player.finalStats.heavyAttack - this.enemy.finalStats.defense);
-            enemyPierced = this.player.finalStats.heavyAttack > this.enemy.finalStats.defense;
+            const atk = this.player.finalStats.heavyAttack;  // 我方的石头
+            const def = this.enemy.finalStats.defense;       // 对方的布
+            playerDamage = Math.min(atk, def);               // 我方吃反震
+            enemyDamage = Math.max(0, atk - def);            // 对方吃溢出
+            enemyPierced = atk > def;
+            playerRecoil = true;
         }
         // 平局
         else if (p === e) {
@@ -118,7 +134,9 @@ class Battle {
             playerDamage: playerDamage,
             enemyDamage: enemyDamage,
             playerPierced: playerPierced,
-            enemyPierced: enemyPierced
+            enemyPierced: enemyPierced,
+            playerRecoil: playerRecoil,
+            enemyRecoil: enemyRecoil
         };
     }
 

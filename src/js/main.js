@@ -596,22 +596,44 @@ class GameController {
 // 1) 首次触摸时尝试请求全屏并锁定横屏(浏览器要求必须由用户手势触发)
 // 2) 双击不缩放
 function setupMobileSupport() {
+    // 注册 service worker: Chrome 判断"能不能装成 App"时, 要求必须有一个
+    // 带 fetch 处理器的 SW。没有它, 手机上的"安装到主屏幕"点了没反应。
+    // file:// 下不能注册(不是安全上下文), 忽略即可。
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+        navigator.serviceWorker.register('sw.js').catch(() => { });
+    }
+
+    // 全屏。
+    // 原来只在第一次 touchstart 试一次 —— 那一次要是被对话框吃掉或失败,
+    // 就永远没机会了。改成: 每次触摸都试, 直到成功为止(最多 5 次)。
+    // 注意: 这里【不再锁横屏】。手机竖着玩也能玩, 布局会自适应。
+    let done = false;
+    let tries = 0;
     const tryLock = async () => {
+        if (done || tries >= 5) return;
+        tries++;
         try {
             if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
                 await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
             }
-            if (screen.orientation && screen.orientation.lock) {
-                await screen.orientation.lock('landscape');
-            }
+            done = true;
         } catch (e) {
-            // 桌面浏览器 / iOS Safari 不支持, 忽略即可(竖屏时会显示"请横屏"提示)
+            // 桌面浏览器 / iOS Safari 不支持, 忽略即可
         }
     };
-    document.addEventListener('touchstart', function once() {
-        document.removeEventListener('touchstart', once);
-        tryLock();
-    }, { once: true });
+    // 只在【触屏设备】上自动全屏。
+    // 桌面用鼠标点一下就进全屏会很烦 —— 桌面要全屏请按 F11。
+    // 鼠标点击不产生 touchstart, 所以桌面上这个监听器等于不存在。
+    document.addEventListener('touchstart', tryLock, { passive: true });
+    if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) {
+        // 手机/平板: 再补一个 click 兜底(个别浏览器不认 touchstart 里的全屏请求)
+        document.addEventListener('click', tryLock, { passive: true });
+    }
+
+    // 退出全屏后重新武装, 这样玩家再点一下就能回到全屏
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) { done = false; tries = 0; }
+    });
 }
 
 // ==================== 启动 ====================
