@@ -1143,60 +1143,12 @@ button, .game-button, .card-thumb, .screen-btn, .dialog-btn, .coin-slot-visual {
     -webkit-user-select: none;
 }
 
-/* 竖屏提示遮罩: 只在"竖屏 + 窄屏"时出现 */
-#rotate-notice {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 99999;
-    background: linear-gradient(160deg, #ffd9ea 0%, #ffb3c1 100%);
-    justify-content: center;
-    align-items: center;
-}
 /* 机台锁形状: 只有窗口"够高"时才收窄。
    手机横屏高度小, 不触发, 仍然铺满宽度 -> 底部控件不会被挤爆。 */
 @media (min-height: 600px) {
     #game-container {
         max-width: min(1780px, 95vw, calc(100vh * 1.24));
     }
-}
-
-@media (orientation: portrait) and (max-width: 820px) {
-    #rotate-notice { display: flex; }
-}
-.rotate-inner { text-align: center; color: #7a2145; }
-.rotate-inner p {
-    font-size: 24px;
-    font-weight: bold;
-    margin-top: 24px;
-}
-.rotate-inner small { display: block; margin-top: 8px; color: #b5547c; font-size: 14px; }
-/* 一个会转的小手机图标 */
-.rotate-phone {
-    width: 74px;
-    height: 130px;
-    margin: 0 auto;
-    border: 6px solid #ff6b9d;
-    border-radius: 14px;
-    background: #fff;
-    position: relative;
-    animation: rotate-hint 2.2s ease-in-out infinite;
-}
-.rotate-phone::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    bottom: 7px;
-    transform: translateX(-50%);
-    width: 26px;
-    height: 4px;
-    border-radius: 2px;
-    background: #ff6b9d;
-}
-@keyframes rotate-hint {
-    0%, 20%   { transform: rotate(0deg); }
-    50%, 70%  { transform: rotate(90deg); }
-    100%      { transform: rotate(90deg); }
 }
 
 /* 触屏设备上把 hover 效果关掉(触摸会"粘住" hover 状态) */
@@ -1240,4 +1192,108 @@ button, .game-button, .card-thumb, .screen-btn, .dialog-btn, .coin-slot-visual {
     .detail-right .stats { font-size: 11px; line-height: 1.6; margin-top: 3px; }
     .screen-message img { max-width: 24%; max-height: 42%; }
     .battle-side .img-wrap { padding: 18px 0 22px; }
+}
+
+/* ===== 手机布局 =====
+   触发: 窄屏(竖屏手机) 或 矮屏(横屏手机)。
+   平板 1024x768 和桌面都不触发, 保持原有观感。
+   目的: 机台边框收薄 + 控件压缩, 把空间尽量让给屏幕。 */
+@media (max-width: 820px), (max-height: 500px) {
+    body { padding: 2px; }
+
+    #arcade-frame {
+        border-width: 5px;
+        border-radius: 14px;
+        padding: 4px 6px;
+    }
+    #display-screen { border-width: 3px; border-radius: 10px; }
+    #screen-content { padding: 4px 8px; }
+
+    :root {
+        /* 关键: 控制区高度不再跟着视口高按比例涨。
+           竖屏视口高 844 时原来的 26vh 是 219px, 会把屏幕挤到只剩 56%。 */
+        /* 下限 112 是硬约束: 出招键直径 = tri-h/1.944, 112 时约 58px,
+           再小就低于 56px 的可点标准了。上限 132 防止竖屏视口高时控件被撑大。 */
+        --tri-h: clamp(112px, 24vh, 132px);
+        --round-btn: clamp(40px, calc(var(--tri-h) * 0.38), 62px);
+        --chrome: 30px;
+    }
+
+    #top-controls { gap: 3px; padding: 3px; border-radius: 8px; }
+    .control-button { padding: 3px 6px; font-size: 9px; border-width: 2px; border-radius: 6px; }
+    #card-reader { width: clamp(84px, 19cqw, 240px); border-width: 2px; border-radius: 9px; }
+    .coin-slot-visual { --coin-h: 48px; }
+    .game-button { border-width: 3px; }
+    .game-button small { font-size: 8px; margin-top: 1px; }
+    .coin-display { font-size: 8px; padding: 2px 6px; border-width: 2px; }
+    #coin-count { font-size: 11px; }
+    #universal-confirm-btn, #universal-cancel-btn { border-width: 2px; }
+}
+
+/* ===== 手机竖屏: 控制区改成两行 =====
+   竖屏宽度只有 ~350px, 而"功能键列 + 刷卡区 + 三角键 + 确认/取消 + 投币"
+   一行至少需要 ~400px —— 硬塞的结果就是互相重叠(剪刀被刷卡区盖住、
+   确认压住投币、取消压住硬币)。所以竖屏拆成两行:
+     第一行: 5 个功能键横排 + 刷卡区
+     第二行: 三角键 + 确认/取消 + 投币
+   功能键那一列本来占 130px 宽, 横排后不再挤占三角键的空间。 */
+@media (max-width: 820px) and (orientation: portrait) {
+    :root {
+        --pr-row1: 44px;    /* 第一行高度 */
+        --pr-gap: 6px;      /* 两行间距 */
+        /* 竖屏把三角键再收一档: 上限给屏幕让出 16px。
+           下限 112 仍是硬约束(出招键 58px >= 56px 可点标准)。 */
+        --tri-h: clamp(112px, 22vh, 116px);
+    }
+
+    #controls {
+        height: calc(var(--tri-h) + var(--pr-row1) + var(--pr-gap));
+    }
+
+    /* ---- 第一行 ---- */
+    #left-panel {
+        top: 0;
+        bottom: auto;
+        height: var(--pr-row1);
+        left: 0;
+        right: 58px;        /* 给右上角的投币口让位, 否则刷卡区会压住它 */
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+    }
+    #top-controls {
+        grid-template-columns: repeat(5, 1fr);   /* 竖列 -> 横排 */
+        width: auto;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .control-button { font-size: 8px; padding: 4px 3px; }
+    #card-reader {
+        flex: 0 0 auto;
+        width: clamp(78px, 24vw, 140px);
+        height: clamp(38px, 5.4vh, 56px);
+    }
+
+    /* ---- 第二行 ---- */
+    .control-row {
+        top: auto;
+        bottom: 0;
+        height: var(--tri-h);
+    }
+    #universal-confirm-btn,
+    #universal-cancel-btn {
+        top: auto;
+        bottom: auto;
+    }
+    #universal-confirm-btn {
+        top: calc(var(--pr-row1) + var(--pr-gap) + (var(--tri-h) - var(--round-btn) * 2 - var(--pair-gap)) / 2);
+    }
+    #universal-cancel-btn {
+        top: calc(var(--pr-row1) + var(--pr-gap) + (var(--tri-h) - var(--round-btn) * 2 - var(--pair-gap)) / 2 + var(--round-btn) + var(--pair-gap));
+    }
+    /* 投币口挪到第一行右端: 放在第二行会和确认/取消撞在一起(右移后又顶到边) */
+    #coin-input-area {
+        top: calc(var(--pr-row1) / 2);
+    }
 }
