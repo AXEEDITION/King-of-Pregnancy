@@ -1256,7 +1256,7 @@ button, .game-button, .card-thumb, .screen-btn, .dialog-btn, .coin-slot-visual {
         bottom: auto;
         height: var(--pr-row1);
         left: 0;
-        right: 58px;        /* 给右上角的投币口让位, 否则刷卡区会压住它 */
+        right: 72px;        /* 给右上角的投币口让位, 否则刷卡区会压住它 */
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
