@@ -1153,11 +1153,15 @@ button, .game-button, .card-thumb, .screen-btn, .dialog-btn, .coin-slot-visual {
 
 /* 触屏设备上把 hover 效果关掉(触摸会"粘住" hover 状态) */
 @media (hover: none) {
-    .game-button:hover,
     .control-button:hover,
     .screen-btn:hover,
     .card-thumb:hover,
     .coin-slot-visual:hover { transform: none; }
+    /* ⚠️ 三角键【不能】写 transform:none —— 触屏点一下 :hover 会粘住,
+       而 transform 里带着定位用的 translateX。清成 none 的话按钮会回到
+       left:50% 的原点, 也就是都跳到"布"那边去。
+       要恢复的是【定位值】而不是 none。 */
+    .game-button:hover { transform: var(--tx); }
     .game-button:hover { box-shadow: 0 8px 20px rgba(255, 107, 157, 0.5), inset 0 -3px 10px rgba(0, 0, 0, 0.2); }
     .card-thumb:hover { box-shadow: none; }
 }
@@ -1256,23 +1260,36 @@ button, .game-button, .card-thumb, .screen-btn, .dialog-btn, .coin-slot-visual {
         bottom: auto;
         height: var(--pr-row1);
         left: 0;
-        right: 72px;        /* 给右上角的投币口让位, 否则刷卡区会压住它 */
+        right: 68px;        /* 给右上角的投币口让位, 否则刷卡区会压住它 */
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
         gap: 6px;
     }
     #top-controls {
-        grid-template-columns: repeat(5, 1fr);   /* 竖列 -> 横排 */
+        /* minmax(0,1fr) 让列宽可以被压缩到内容宽度以下 —— 否则"作弊 +100币"
+           这个长标签会把整行撑开, 挤到刷卡区底下被盖住 */
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         width: auto;
         flex: 1 1 auto;
         min-width: 0;
     }
-    .control-button { font-size: 8px; padding: 4px 3px; }
+    .control-button {
+        font-size: 8px;
+        padding: 4px 1px;      /* 左右内边距压到 1px, 让"浏览卡牌"这种 4 字标签放得下 */
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+    }
+    /* 作弊键标签有 7 个字, 5 个键并排时一定放不下 —— 竖屏只留"作弊" */
+    .control-button.cheat { font-size: 0; }
+    .control-button.cheat::after { content: '作弊'; font-size: 8px; }
+    /* 刷卡区放到【最左边】 */
     #card-reader {
+        order: -1;
         flex: 0 0 auto;
-        width: clamp(78px, 24vw, 140px);
-        height: clamp(38px, 5.4vh, 56px);
+        width: clamp(64px, 17vw, 110px);   /* 再收一点, 让浏览卡牌4 字不被截断 */
+        height: clamp(34px, 4.8vh, 50px);
     }
 
     /* ---- 第二行 ---- */
@@ -1292,8 +1309,15 @@ button, .game-button, .card-thumb, .screen-btn, .dialog-btn, .coin-slot-visual {
     #universal-cancel-btn {
         top: calc(var(--pr-row1) + var(--pr-gap) + (var(--tri-h) - var(--round-btn) * 2 - var(--pair-gap)) / 2 + var(--round-btn) + var(--pair-gap));
     }
-    /* 投币口挪到第一行右端: 放在第二行会和确认/取消撞在一起(右移后又顶到边) */
+    /* 投币口挪到第一行右端: 放在第二行会和确认/取消撞在一起(右移后又顶到边)。
+       ⚠️ 必须 top:0 + transform:none —— 原来用"垂直居中"(top: 行高/2 再上移一半),
+       投币口比这一行还高, 居中后会向上顶出去 13px, 插进上面的屏幕里。 */
     #coin-input-area {
-        top: calc(var(--pr-row1) / 2);
+        top: 0;
+        transform: none;
+        gap: 2px;
     }
+    .coin-slot-visual { --coin-h: 34px; }
+    .coin-display { font-size: 7px; padding: 1px 5px; }
+    #coin-count { font-size: 10px; }
 }
