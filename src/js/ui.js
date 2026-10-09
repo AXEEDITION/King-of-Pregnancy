@@ -165,16 +165,90 @@ class UI {
                 }
             });
         }
+        buttons.push({
+            text: '导出存档（下载文件）',
+            callback: () => {
+                const data = this.downloadSaveFile();
+                const n = Object.keys(data.slots).length;
+                this.showDialog(
+                    `已导出存档文件，请到「下载」文件夹里查看。\n\n` +
+                    `包含：当前进度 + ${n} 个存档槽位\n` +
+                    `把它保存好，换设备/清缓存后可以用「读档 → 导入存档」恢复。`,
+                    [{ text: '确定', primary: true }]);
+            }
+        });
         buttons.push({ text: '取消', callback: () => {} });
         this.showDialog(this.buildSlotText('选择存档槽位：'), buttons, false, true);
+    }
+
+    // ---- 导出: 生成 JSON 并触发下载 ----
+    downloadSaveFile() {
+        const data = game.exportSaveData();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const pad = n => String(n).padStart(2, '0');
+        const d = new Date();
+        const name = `孕娘王者_存档_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`
+            + `_${pad(d.getHours())}${pad(d.getMinutes())}.json`;
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        return data;
+    }
+
+    // ---- 导入: 弹系统文件选择框, 读进来后交给 game.importSaveData ----
+    pickSaveFile(onDone) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,application/json';
+        input.onchange = () => {
+            const f = input.files && input.files[0];
+            if (!f) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                let obj = null;
+                try { obj = JSON.parse(reader.result); } catch (e) { }
+                const res = obj ? game.importSaveData(obj) : { ok: false, msg: '文件不是合法的 JSON，或者内容已损坏。' };
+                if (onDone) onDone(res);
+            };
+            reader.onerror = () => { if (onDone) onDone({ ok: false, msg: '读取文件失败。' }); };
+            reader.readAsText(f);
+        };
+        input.click();
     }
 
     showLoadSlotDialog() {
         const avail = [];
         for (let i = 1; i <= 3; i++) if (game.getSaveInfo(i).exists) avail.push(i);
 
+        const importBtn = {
+            text: '导入存档（选择文件）',
+            primary: avail.length === 0,
+            callback: () => {
+                this.pickSaveFile((res) => {
+                    if (res.ok) {
+                        this.updateCoins(game.state.coins);
+                        if (window.gameController) window.gameController.afterLoad();
+                        this.showDialog(res.msg, [{ text: '确定', primary: true }]);
+                    } else {
+                        this.showDialog(res.msg, [
+                            { text: '再试一次', primary: true, callback: () => this.showLoadSlotDialog() },
+                            { text: '取消', callback: () => { } }
+                        ]);
+                    }
+                });
+            }
+        };
+
+        // 没有本地槽位时也要能导入 —— 否则"清缓存后什么都没有"就永远进不来了
         if (avail.length === 0) {
-            this.showDialog('没有可用的存档。', [{ text: '确定', primary: true }]);
+            this.showDialog('本机没有存档。\n如果你之前导出过存档文件，可以现在导入。',
+                [importBtn, { text: '取消', callback: () => { } }], false, true);
             return;
         }
 
@@ -192,6 +266,7 @@ class UI {
                 }
             }
         }));
+        buttons.push(importBtn);
         buttons.push({ text: '取消', callback: () => {} });
         this.showDialog(this.buildSlotText('选择读档槽位：'), buttons, false, true);
     }
@@ -523,6 +598,13 @@ class UI {
     // 4. 整卡越过刷卡区之后开始淡出, 到网页外时已完全消失
     // 5. 动画层 position:fixed + z-index 9999, 卡片全程在所有画面最上层
     playSwipeAnimation(card, callback) {
+        // ⚠️ 重入保护: 动画期间"刷卡"键上挂的还是同一个回调, 狂点会同时启动
+        // 多个动画 —— 每个动画到点都会调一次 callback, 同一张卡于是被
+        // selectedBabies.push() 好几遍, 属性直接叠 N 倍。
+        if (this._swiping) return;
+        this._swiping = true;
+        this.disableConfirm('刷卡中…');   // 顺便给个明确反馈, 免得玩家以为没点上
+
         const reader = document.getElementById('card-reader');
         const slot = reader.querySelector('.card-reader-slot');
         const rarity = RARITY_CONFIG[card.rarity] || RARITY_CONFIG.common;
@@ -588,6 +670,9 @@ class UI {
 
         setTimeout(() => {
             stage.remove();
+            this._swiping = false;
+            // callback 会走 onCardSwipe -> showCardSelectionList, 里面会重新
+            // setConfirm('结束刷卡', …), 所以这里不用手动恢复按钮
             if (callback) callback();
         }, DURATION + 80);
     }
@@ -754,7 +839,8 @@ class UI {
 
         const hp = document.createElement('div');
         hp.className = `${side}-hp hp-container`;
-        const percent = Math.max(0, (character.currentHealth / character.maxHealth) * 100);
+        const maxHp = character.maxHealth > 0 ? character.maxHealth : 1;
+        const percent = Math.max(0, Math.min(100, (character.currentHealth / maxHp) * 100));
         hp.innerHTML = `
             <div class="hp-bar-wrapper">
                 <div class="hp-bar-fill" style="background:${side === 'player' ? '#10b981' : '#ef4444'}; width:${percent}%;"></div>
@@ -772,7 +858,8 @@ class UI {
         const hpContainer = document.querySelector(`.${side}-hp`);
         if (!hpContainer) return;
 
-        const percent = Math.max(0, (character.currentHealth / character.maxHealth) * 100);
+        const maxHp = character.maxHealth > 0 ? character.maxHealth : 1;
+        const percent = Math.max(0, Math.min(100, (character.currentHealth / maxHp) * 100));
         const bar = hpContainer.querySelector('.hp-bar-fill');
         const text = hpContainer.querySelector('.hp-text');
         if (bar) bar.style.width = `${percent}%`;

@@ -130,6 +130,61 @@ class Game {
         }
     }
 
+    // ==================== 存档导出 / 导入 ====================
+    // 用途: 备份到文件、换设备/换浏览器、清理浏览器数据后恢复。
+    // (游戏本身每次操作都会自动存档, 所以"存档/读档"按钮的日常意义不大,
+    //  真正有用的是把进度导出成一个能带走、能留底的文件。)
+    exportSaveData() {
+        const slots = {};
+        for (let i = 1; i <= 3; i++) {
+            try {
+                const raw = localStorage.getItem(this.saveKey(i));
+                if (raw) slots[i] = JSON.parse(raw);
+            } catch (e) { /* 坏档跳过 */ }
+        }
+        return {
+            _format: 'pregnant-queens-save',
+            _version: 1,
+            _exportedAt: new Date().toISOString(),
+            currentSlot: this.currentSlot,
+            current: this.state,
+            slots: slots,
+        };
+    }
+
+    // 返回 { ok, msg }
+    importSaveData(obj) {
+        if (!obj || typeof obj !== 'object') return { ok: false, msg: '文件内容不是有效的存档格式。' };
+        if (obj._format !== 'pregnant-queens-save') {
+            return { ok: false, msg: '这不是「孕娘王者」的存档文件。' };
+        }
+        if (!obj.current || typeof obj.current !== 'object') {
+            return { ok: false, msg: '存档里没有找到游戏进度数据。' };
+        }
+
+        try {
+            // 槽位: 有就覆盖, 没有就保留原样(不清空)
+            const slots = obj.slots || {};
+            let slotCount = 0;
+            for (let i = 1; i <= 3; i++) {
+                if (slots[i]) {
+                    localStorage.setItem(this.saveKey(i), JSON.stringify(slots[i]));
+                    slotCount++;
+                }
+            }
+            // 当前进度
+            const slot = Number.isInteger(obj.currentSlot) ? obj.currentSlot : this.currentSlot;
+            this.currentSlot = slot;
+            localStorage.setItem(this.saveKey(slot), JSON.stringify(obj.current));
+            if (slotCount === 0) slotCount = 1;
+
+            this.state = Object.assign(this.freshState(), obj.current);
+            return { ok: true, msg: `导入成功：硬币 ${this.state.coins}，卡牌 ${(this.state.ownedCards || []).length} 种，存档槽位 ${slotCount} 个。` };
+        } catch (e) {
+            return { ok: false, msg: '写入存档失败：' + (e && e.message ? e.message : e) };
+        }
+    }
+
     resetGame() {
         for (let i = 1; i <= 3; i++) {
             localStorage.removeItem(this.saveKey(i));
@@ -223,14 +278,27 @@ class Game {
     // ==================== 战斗角色 ====================
     // statsOverride: 敌人用, 传入按场次缩放后的数值, 代替角色自带数值
     createBattleCharacter(character, spirits = [], isPregnant = false, statsOverride = null) {
-        const finalStats = Object.assign({}, statsOverride || character.stats);
+        // 四项先给 0 兜底: 万一 character.stats 缺失, `undefined += 数字` 会
+        // 让整条数值链变成 NaN, 然后扩散到血条和所有战斗计算里。
+        const finalStats = Object.assign(
+            { heavyAttack: 0, rushAttack: 0, defense: 0, health: 0 },
+            statsOverride || character.stats || {}
+        );
 
         spirits.forEach(spirit => {
-            finalStats.heavyAttack += spirit.bonusStats.heavyAttack;
-            finalStats.rushAttack += spirit.bonusStats.rushAttack;
-            finalStats.defense += spirit.bonusStats.defense;
-            finalStats.health += spirit.bonusStats.health;
+            const b = (spirit && spirit.bonusStats) || {};
+            finalStats.heavyAttack += b.heavyAttack || 0;
+            finalStats.rushAttack += b.rushAttack || 0;
+            finalStats.defense += b.defense || 0;
+            finalStats.health += b.health || 0;
         });
+
+        // 最后再扫一遍: 任何非有限数字一律归零, 血量至少 1
+        // (血量为 0 会让血条百分比变成 Infinity/NaN)
+        ['heavyAttack', 'rushAttack', 'defense', 'health'].forEach(k => {
+            if (!Number.isFinite(finalStats[k])) finalStats[k] = 0;
+        });
+        if (finalStats.health < 1) finalStats.health = 1;
 
         return {
             id: character.id,
